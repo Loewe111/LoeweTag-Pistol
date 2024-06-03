@@ -104,7 +104,8 @@ unsigned int generateDeviceID() { // Generate a unique Device ID based on the MA
 void setup() {
   deviceID = generateDeviceID();
   Serial.begin(115200);
-  Serial.println("LoeweTag Pistol | (c) 2023 Loewe111 | loewe111.github.io/LoeweTag");
+  Serial.println("LoeweTag Pistol | (c) 2024 Loewe111 | loewe111.github.io/LoeweTag");
+  Serial.println("Build: " + String(BUILD_INFO));
   Serial.println("Firmware: " + String(FIRMWARE));
   Serial.println("MAC: " + WiFi.macAddress());
   Serial.println("Device ID: " + String(deviceID));
