@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <espnow.h>
 #include <Adafruit_NeoPixel.h>
 #include <IRremote.hpp>
 #include <ArduinoJson.h>
@@ -26,11 +27,8 @@
 Adafruit_NeoPixel leds_gun(6, LEDS_GUN_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel leds_sensors(4, LEDS_SENSORS_PIN, NEO_GRB + NEO_KHZ800);
 
-messageTCP message = messageTCP();
-WiFiServer server(7084);
-
-DynamicJsonDocument response(JSON_BUFFER_SIZE);
-DynamicJsonDocument request(JSON_BUFFER_SIZE);
+uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint16_t masterID = 0;
 
 unsigned long lastMillis = 0;
 unsigned int frame = 0;
@@ -97,7 +95,7 @@ unsigned int generateDeviceID() { // Generate a unique Device ID based on the MA
   unsigned long macID = ((unsigned long)mac[0] << 40) | ((unsigned long)mac[1] << 32) | ((unsigned long)mac[2] << 24) |
                         ((unsigned long)mac[3] << 16) | ((unsigned long)mac[4] << 8) | ((unsigned long)mac[5]);
   randomSeed(macID); // Seed the random number generator with the mac address
-  unsigned int randomID = random(0, 0xFFFF);
+  uint16_t randomID = random(0, 0xFFFF);
   return randomID;
 }
 
@@ -126,8 +124,14 @@ void setup() {
   IrReceiver.start();
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(AP_SSID, AP_PASS);
-  server.begin();
+  if (esp_now_init() != 0) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_register_recv_cb(handleMessages);
+
 }
 
 void loop() {
