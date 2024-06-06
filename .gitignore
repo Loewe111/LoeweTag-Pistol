@@ -5,3 +5,4 @@
 .vscode/ipch
 .vscode/settings.json
 include/build_info.h
+.vscode/extensions.json
