@@ -309,14 +309,10 @@ void loop() {
 
   if(IrReceiver.decode()) {
     if(IrReceiver.decodedIRData.protocol != UNKNOWN) {
-      uint8_t address = IrReceiver.decodedIRData.decodedRawData;
-      uint8_t command = IrReceiver.decodedIRData.decodedRawData >> 16;
-      IPAddress ip = IPAddress(192, 168, address, command);
-      response.clear();
-      response["type"] = "hit";
-      response["ip"] = WiFi.localIP().toString();
-      response["sender"] = ip.toString();
-      message.send(IPAddress(192, 168, 1, 1), response.as<String>().c_str());
+      anim.setAnimation(ANIM_HIT);
+      message_hit_t hit = {(uint16_t)IrReceiver.decodedIRData.decodedRawData};
+      message_base_t* message = create_message(deviceID, masterID, MESSAGE_HIT, &hit);
+      sendMessage(message);
     }
     IrReceiver.resume();
   }
