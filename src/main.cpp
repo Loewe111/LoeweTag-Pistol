@@ -3,8 +3,9 @@
 #include <espnow.h>
 #include <Adafruit_NeoPixel.h>
 #include <IRremote.hpp>
-#include <ArduinoJson.h>
-#include "messageTCP.h"
+#include "animations/animations.h"
+#include "pistol.h"
+#include "build_info.h"
 
 // User settings
 #define AP_SSID "LoeweTag-Link"
@@ -207,104 +208,10 @@ void setup() {
 }
 
 void loop() {
-  bool connected = WiFi.status() == WL_CONNECTED;
-  if(!connected) { // If not connected to WiFi
-    leds_sensors.fill(leds_sensors.Color(0, 0, 0));
-    leds_gun.fill(leds_gun.Color(0, 0, 0));
-    if(frame % 10 == 0) {
-      leds_gun.setPixelColor(5, 0, 0, 255);
-    } else {
-      leds_gun.setPixelColor(5, 255, 0, 0);
-    }
-    leds_sensors.show();
-    leds_gun.show();
-    state = STATE_OFFLINE;
-    informationSent = false;
-  } else { // If connected to WiFi, do game logic
-    if(state == STATE_OFFLINE) state = STATE_IDLE; // If just connected, set state to idle
-    if(state == STATE_IDLE) {
-      leds_sensors.fill(leds_gun.Color(0, 0, 0));
-      leds_gun.fill(leds_gun.Color(0, 0, 0));
-      leds_gun.setPixelColor(5, 0, 255, 0);
-      leds_sensors.show();
-      leds_gun.show();
-    } else if(state == STATE_WAITING) {
-      int index = map(sin(frame) * 10, -10, 10, 0, 5);
-      leds_gun.fill(leds_gun.Color(0, 0, 0));
-      leds_gun.setPixelColor(index, leds_gun.Color(player_color[0], player_color[1], player_color[2]));
-      leds_gun.show();
-      leds_sensors.fill(leds_sensors.Color(0, 0, 0));
-      leds_sensors.show();
-    } else if(state == STATE_RUNNING) {
-      double multiplier = sin(frame / 10.0) / 2.0 + 0.5;
-      int leds = map(VAR_HP, 0, VAR_MHP, 0, 6);
-      int r = player_color[0] * multiplier;
-      int g = player_color[1] * multiplier;
-      int b = player_color[2] * multiplier;
-
-      leds_gun.fill(leds_gun.Color(0, 0, 0));
-      for(int i = 0; i < leds; i++) {
-        leds_gun.setPixelColor(i, leds_gun.Color(r, g, b));
-      }
-      leds_gun.show();
-      if(VAR_HP > 0){
-        leds_sensors.fill(leds_sensors.Color(r, g, b));
-      } else {
-        leds_sensors.fill(leds_sensors.Color(0, 0, 0));
-        leds_sensors.setPixelColor(frame%4, leds_sensors.Color(r, g, b));
-      }
-      leds_sensors.show();
-    }
-    if(!informationSent) {
-      Serial.println("Connected as " + WiFi.localIP().toString());
-      sendInfo();
-      informationSent = true;
-    }
-  }
-
-  if(!connected && frame % 100 == 0) {
-    WiFi.begin(AP_SSID, AP_PASS);
-  }
-
-  if(digitalRead(BUTTON_PIN) && cooldown == 0 && VAR_ATK > 0) {
+  if(digitalRead(BUTTON_PIN) && millis() - lastShoot > state.weapon.reload_time) {
+    anim.setAnimation(ANIM_SHOOTING);
     shoot();
-    cooldown = VAR_RT;
-  }
-
-  IPAddress* sender = new IPAddress(); // Create a new IP address
-  char* content = message.receive(&server, sender, CHAR_BUFFER_SIZE); // Get the message and the sender
-
-  if(*sender){
-    Serial.println("Received message from " + sender->toString() + ": " + content);
-    request.clear();
-    deserializeJson(request, content);
-    if(request["type"] == "color") {
-      player_color[0] = request["r"];
-      player_color[1] = request["g"];
-      player_color[2] = request["b"];
-    } else if(request["type"] == "vars") {
-      VAR_HP = request["HP"];
-      VAR_MHP = request["MHP"];
-      VAR_SP = request["SP"];
-      VAR_MSP = request["MSP"];
-      VAR_ATK = request["ATK"];
-      VAR_RT = request["RT"];
-      VAR_PTS = request["PTS"];
-      VAR_KILL = request["KILL"];
-    } else if(request["type"] == "gamestate") {
-      state = request["state"];
-    } else if(request["type"] == "locate") {
-      leds_gun.fill(leds_gun.Color(0, 0, 0));
-      swipeColor(255, 0, 0, 50);
-      flashMotor();
-      swipeColor(0, 255, 0, 50);
-      flashMotor();
-      swipeColor(0, 0, 255, 50);
-      flashMotor();
-      swipeColor(0, 0, 0, 50);
-    } else if(request["type"] == "information") {
-      sendInfo();
-    }
+    lastShoot = millis();
   }
 
   if(IrReceiver.decode()) {
