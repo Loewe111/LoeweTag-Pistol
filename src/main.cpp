@@ -30,31 +30,122 @@ Adafruit_NeoPixel leds_sensors(4, LEDS_SENSORS_PIN, NEO_GRB + NEO_KHZ800);
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 uint16_t masterID = 0;
 
-unsigned long lastMillis = 0;
-unsigned int frame = 0;
-unsigned int cooldown = 0;
+unsigned long lastShoot = 0;
 
-unsigned int deviceID;
+unsigned long lastPing = 0;
+unsigned int pingInterval = 2000;
 
-uint8_t player_color[] = {255, 127, 0};
+uint16_t deviceID;
 
-uint16_t player_vars[] = {/*HP:*/ 0, /*MHP:*/ 100, /*SP:*/ 0, /*MSP:*/ 100, /*ATK:*/ 0, /*RT:*/ 20, /*PTS:*/ 0, /*KILL:*/ 0};
-#define VAR_HP player_vars[0]
-#define VAR_MHP player_vars[1]
-#define VAR_SP player_vars[2]
-#define VAR_MSP player_vars[3]
-#define VAR_ATK player_vars[4]
-#define VAR_RT player_vars[5]
-#define VAR_PTS player_vars[6]
-#define VAR_KILL player_vars[7]
+pistol_state_t state = {
+  .gamestate = GAMESTATE_OFFLINE,
+  .color = {255, 0, 255},
+  .weapon = {
+    .reload_type = pistol_weapon_t::automatic,
+    .reload_time = 500,
+    .power = 0,
+    .active = false
+  },
+  .health = 8,
+  .max_health = 12
+};
 
-bool informationSent = false;
+animations anim(&leds_gun, &leds_sensors, &state);
 
-#define STATE_OFFLINE -1
-#define STATE_IDLE 0
-#define STATE_WAITING 1
-#define STATE_RUNNING 2
-int state = STATE_OFFLINE;
+template <typename T>
+message_base_t* create_message(uint16_t sender, uint16_t target, message_type_t type, T* data) {
+  message_base_t* message = (message_base_t*)malloc(sizeof(message_base_t) + sizeof(T));
+  message->sender = sender;
+  message->target = target;
+  message->type = type;
+  message->length = sizeof(T);
+  memcpy(message->data, data, sizeof(T));
+  return message;
+}
+
+void sendMessage(message_base_t* message, bool keepMessage = false) {
+  esp_now_send(broadcastAddress, (uint8_t*)message, sizeof(message_base_t) + message->length);
+  if (!keepMessage) free(message);
+}
+
+void pingMaster() {
+  message_ping_t ping;
+  message_base_t* message = create_message(deviceID, masterID, MESSAGE_PING, &ping);
+  sendMessage(message);
+}
+
+void updateState(gamestate_t newState) {
+  state.gamestate = newState;
+
+  if (state.gamestate == GAMESTATE_OFFLINE) {
+    anim.setAnimation(ANIM_CONNECTING);
+  } else if (state.gamestate == GAMESTATE_IDLE) {
+    anim.setAnimation(ANIM_IDLE);
+  } else if (state.gamestate == GAMESTATE_PLAYING) {
+    anim.setAnimation(ANIM_PLAYING);
+  }
+}
+
+void handleMessages(uint8_t *mac, uint8_t *data, uint8_t len) {
+  message_base_t* message = (message_base_t*)malloc(len);
+  memcpy(message, data, len);
+  if (message->target != deviceID && message->target != 0xFFFF) {
+    free(message);
+    return; // Message is not for this device
+  }
+
+  switch(message->type) {
+    case MESSAGE_PING: {
+      message_ping_t ping;
+      memcpy(&ping, message->data, sizeof(message_ping_t));
+      if (state.gamestate == GAMESTATE_OFFLINE) {
+        masterID = message->sender;
+        updateState(GAMESTATE_IDLE);
+        Serial.println("Found Master: " + String(masterID));
+        sendInfo();
+      }
+      lastPing = millis();
+      pingMaster();
+    } break;
+    case MESSAGE_DEVICE_INFORMATION: {
+      break; // Don't care, this device should not receive this message
+    }
+    case MESSAGE_SET_GAMESTATE: {
+      message_set_gamestate_t set_gamestate;
+      memcpy(&set_gamestate, message->data, sizeof(message_set_gamestate_t));
+      updateState(set_gamestate.gamestate);
+    } break;
+    case MESSAGE_SET_COLOR: {
+      message_set_color_t set_color;
+      memcpy(&set_color, message->data, sizeof(message_set_color_t));
+      state.color = (pistol_color_t){set_color.r, set_color.g, set_color.b};
+      Serial.println("Received color: " + String(state.color.r) + " " + String(state.color.g) + " " + String(state.color.b));
+    } break;
+    case MESSAGE_SET_WEAPON: {
+      message_set_weapon_t set_weapon;
+      memcpy(&set_weapon, message->data, sizeof(message_set_weapon_t));
+      state.weapon = set_weapon.weapon;
+    } break;
+    case MESSAGE_SET_HEALTH: {
+      uint16_t health;
+      memcpy(&health, message->data, sizeof(uint16_t));
+      state.health = health;
+    } break;
+    case MESSAGE_HIT: {
+      break; // Don't care, this device should not receive this message
+    }
+    default: {
+      Serial.println("Received unknown message");
+    } break;
+  }
+  free(message);
+}
+
+void sendInfo() {
+  message_device_information_t response = {deviceID, DEVICE_TYPE_PISTOL};
+  message_base_t* message = create_message(deviceID, masterID, MESSAGE_DEVICE_INFORMATION, &response);
+  sendMessage(message);
+}
 
 void shoot() {
   digitalWrite(MOTOR_PIN, HIGH);
@@ -62,25 +153,6 @@ void shoot() {
   uint8_t byte1 = deviceID & 0xFF;
   IrSender.sendOnkyo(byte0, byte1, 0);
   digitalWrite(MOTOR_PIN, LOW);
-}
-
-void sendInfo() {
-  response.clear();
-  response["type"] = "device_information";
-  response["ip"] = WiFi.localIP().toString();
-  response["device_id"] = deviceID;
-  response["device_type"] = "pistol";
-  response["firmware"] = FIRMWARE;
-
-  message.send(IPAddress(192, 168, 1, 1), response.as<String>().c_str());
-}
-
-void swipeColor(uint8_t r, uint8_t g, uint8_t b, uint8_t delayTime) {
-  for(int i = 0; i < 6; i++) {
-    leds_gun.setPixelColor(i, leds_gun.Color(r, g, b));
-    leds_gun.show();
-    delay(delayTime);
-  }
 }
 
 void flashMotor() {
