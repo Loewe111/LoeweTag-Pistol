@@ -321,16 +321,10 @@ void loop() {
     IrReceiver.resume();
   }
 
-  // Frame update every 100ms
-  if(millis() - lastMillis > 100) {
-    lastMillis = millis();
-    frame++;
-    if(cooldown > 0) {
-      cooldown -= 1;
-    }
+  if (millis() - lastPing > pingInterval + 1000 && state.gamestate != GAMESTATE_OFFLINE) {
+    updateState(GAMESTATE_OFFLINE);
+    Serial.println("Timeout");
   }
 
-  // delete pointers
-  delete sender;
-  delete[] content;
+  anim.draw();
 }
