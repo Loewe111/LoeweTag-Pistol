@@ -3,6 +3,6 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-.vscode/setttings.json
+.vscode/settings.json
 include/build_info.h
 .vscode/extensions.json
