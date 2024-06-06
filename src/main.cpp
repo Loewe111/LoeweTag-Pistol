@@ -57,10 +57,10 @@ bool informationSent = false;
 int state = STATE_OFFLINE;
 
 void shoot() {
-  // Send IR Onkyo command, data: IP
   digitalWrite(MOTOR_PIN, HIGH);
-  IPAddress ip = WiFi.localIP();
-  IrSender.sendOnkyo(ip[2], ip[3], 0);
+  uint8_t byte0 = deviceID >> 8;
+  uint8_t byte1 = deviceID & 0xFF;
+  IrSender.sendOnkyo(byte0, byte1, 0);
   digitalWrite(MOTOR_PIN, LOW);
 }
 
