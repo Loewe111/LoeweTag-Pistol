@@ -8,13 +8,9 @@
 #include "build_info.h"
 
 // User settings
-#define AP_SSID "LoeweTag-Link"
-#define AP_PASS "12345678"
 #define LED_BRIGHTNESS 64 // 0-255
 
 // Global constants 
-#define CHAR_BUFFER_SIZE 200
-#define JSON_BUFFER_SIZE 200
 #define FIRMWARE "dev 0.10.2"
 
 // Pin definitions
