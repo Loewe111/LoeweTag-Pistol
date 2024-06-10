@@ -84,8 +84,8 @@ struct message_set_weapon_t {
 };
 
 struct message_set_health_t {
-    uint16_t health;
-    uint16_t max_health;
+    uint8_t health;
+    uint8_t max_health;
 };
 
 #endif

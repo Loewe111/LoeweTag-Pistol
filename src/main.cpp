@@ -124,9 +124,10 @@ void handleMessages(uint8_t *mac, uint8_t *data, uint8_t len) {
       state.weapon = set_weapon.weapon;
     } break;
     case MESSAGE_SET_HEALTH: {
-      uint16_t health;
-      memcpy(&health, message->data, sizeof(uint16_t));
-      state.health = health;
+      message_set_health_t set_health;
+      memcpy(&set_health, message->data, sizeof(message_set_health_t));
+      state.health = set_health.health;
+      state.max_health = set_health.max_health;
     } break;
     case MESSAGE_HIT: {
       break; // Don't care, this device should not receive this message
