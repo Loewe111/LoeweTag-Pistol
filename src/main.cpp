@@ -205,7 +205,7 @@ void setup() {
 }
 
 void loop() {
-  if(digitalRead(BUTTON_PIN) && millis() - lastShoot > state.weapon.reload_time) {
+  if(digitalRead(BUTTON_PIN) && millis() - lastShoot > state.weapon.reload_time && state.weapon.active) {
     anim.setAnimation(ANIM_SHOOTING);
     shoot();
     lastShoot = millis();
