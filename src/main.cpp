@@ -49,6 +49,8 @@ pistol_state_t state = {
 
 animations anim(&leds_gun, &leds_sensors, &state);
 
+void sendInfo();
+
 template <typename T>
 message_base_t* create_message(uint16_t sender, uint16_t target, message_type_t type, T* data) {
   message_base_t* message = (message_base_t*)malloc(sizeof(message_base_t) + sizeof(T));
