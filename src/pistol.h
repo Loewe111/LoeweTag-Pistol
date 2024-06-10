@@ -16,7 +16,7 @@ struct pistol_color_t {
 };
 
 struct pistol_weapon_t {
-    enum {automatic, manual} reload_type;
+    enum : uint8_t {automatic, manual} reload_type;
     uint16_t reload_time;
     uint16_t power;
     bool active;
