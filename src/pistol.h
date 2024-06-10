@@ -3,6 +3,8 @@
 #ifndef PISTOL_H
 #define PISTOL_H
 
+#pragma pack(push, 1)
+
 enum gamestate_t : int8_t {
     GAMESTATE_OFFLINE = -1,
     GAMESTATE_IDLE = 0,
@@ -87,5 +89,7 @@ struct message_set_health_t {
     uint8_t health;
     uint8_t max_health;
 };
+
+#pragma pack(pop)
 
 #endif
