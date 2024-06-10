@@ -149,9 +149,7 @@ void sendInfo() {
 
 void shoot() {
   digitalWrite(MOTOR_PIN, HIGH);
-  uint8_t byte0 = deviceID >> 8;
-  uint8_t byte1 = deviceID & 0xFF;
-  IrSender.sendOnkyo(byte0, byte1, 0);
+  IrSender.sendOnkyo(deviceID, 0, 0);
   digitalWrite(MOTOR_PIN, LOW);
 }
 
