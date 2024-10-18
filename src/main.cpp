@@ -1,3 +1,5 @@
+#define NO_LED_FEEDBACK_CODE
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <espnow.h>
@@ -14,15 +16,18 @@
 #define FIRMWARE "dev 0.10.2"
 
 // Pin definitions
-#define BUTTON_PIN 15
-#define IR_RECEIVE_PIN 5
-#define IR_SEND_PIN 13
-#define LEDS_GUN_PIN 14
-#define LEDS_SENSORS_PIN 4
-#define MOTOR_PIN 12
+#define PIN_GUN_TRIGGER 15 // Connector X7
+#define PIN_GUN_IR_BEAM_NARROW 0 // Connector X1
+#define PIN_GUN_IR_BEAM_WIDE 12 // Connector X2
+#define PIN_GUN_MOTOR 13 // Connector X4
 
-Adafruit_NeoPixel leds_gun(6, LEDS_GUN_PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel leds_sensors(4, LEDS_SENSORS_PIN, NEO_GRB + NEO_KHZ800);
+#define PIN_GUN_LEDS 14
+
+#define PIN_SENSORS_IR_RECEIVE 5 
+#define PIN_SENSORS_LEDS 4
+
+Adafruit_NeoPixel leds_gun(6, PIN_GUN_LEDS, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel leds_sensors(4, PIN_SENSORS_LEDS, NEO_GRB + NEO_KHZ800);
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 uint16_t masterID = 0;
@@ -148,15 +153,15 @@ void sendInfo() {
 }
 
 void shoot() {
-  digitalWrite(MOTOR_PIN, HIGH);
+  digitalWrite(PIN_GUN_MOTOR, HIGH);
   IrSender.sendOnkyo(deviceID, 0, 0);
-  digitalWrite(MOTOR_PIN, LOW);
+  digitalWrite(PIN_GUN_MOTOR, LOW);
 }
 
 void flashMotor() {
-  digitalWrite(MOTOR_PIN, HIGH);
+  digitalWrite(PIN_GUN_MOTOR, HIGH);
   delay(30);
-  digitalWrite(MOTOR_PIN, LOW);
+  digitalWrite(PIN_GUN_MOTOR, LOW);
 }
 
 unsigned int generateDeviceID() { // Generate a unique Device ID based on the MAC address
@@ -178,7 +183,7 @@ void setup() {
   Serial.println("MAC: " + WiFi.macAddress());
   Serial.println("Device ID: " + String(deviceID));
 
-  pinMode(MOTOR_PIN, OUTPUT);
+  pinMode(PIN_GUN_MOTOR, OUTPUT);
 
   leds_sensors.begin();
   leds_sensors.show();
@@ -188,9 +193,9 @@ void setup() {
   leds_gun.show();
   leds_gun.setBrightness(LED_BRIGHTNESS);
 
-  IrSender.begin(IR_SEND_PIN);
+  IrSender.begin(PIN_GUN_IR_BEAM_NARROW);
   IrSender.enableIROut(38);
-  IrReceiver.begin(IR_RECEIVE_PIN);
+  IrReceiver.begin(PIN_SENSORS_IR_RECEIVE);
   IrReceiver.start();
 
   WiFi.mode(WIFI_STA);
@@ -205,7 +210,7 @@ void setup() {
 }
 
 void loop() {
-  if(digitalRead(BUTTON_PIN) && millis() - lastShoot > state.weapon.reload_time && state.weapon.active) {
+  if(digitalRead(PIN_GUN_TRIGGER) && millis() - lastShoot > state.weapon.reload_time && state.weapon.active) {
     anim.setAnimation(ANIM_SHOOTING);
     shoot();
     lastShoot = millis();
