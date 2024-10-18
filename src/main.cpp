@@ -46,7 +46,8 @@ pistol_state_t state = {
     .reload_type = pistol_weapon_t::automatic,
     .reload_time = 500,
     .power = 0,
-    .active = false
+    .active = false,
+    .beam_type = pistol_weapon_t::narrow
   },
   .health = 8,
   .max_health = 12

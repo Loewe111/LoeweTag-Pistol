@@ -22,6 +22,7 @@ struct pistol_weapon_t {
     uint16_t reload_time;
     uint16_t power;
     bool active;
+    enum : uint8_t {narrow, wide} beam_type;
 };
 
 struct pistol_state_t {
@@ -48,6 +49,7 @@ enum message_type_t : uint8_t {
     MESSAGE_SET_WEAPON = 0x11,
     MESSAGE_SET_HEALTH = 0x12,
     MESSAGE_HIT = 0x20,
+    MESSAGE_REQUEST_INFO = 0x22,
 };
 
 struct message_base_t {
