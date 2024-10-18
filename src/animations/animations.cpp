@@ -15,11 +15,11 @@ float floatSin(uint16_t x) {
 animations::animations(Adafruit_NeoPixel *leds_gun, Adafruit_NeoPixel *leds_sensors, pistol_state_t *state) {
     this->leds_gun = leds_gun;
     this->leds_sensors = leds_sensors;
-    this->pState = state;
+    this->pistol_state = state;
 }
 
 void animations::_anim_connecting() {
-    unsigned long m = millis() / 2 * -1; 
+    unsigned long m = runTime / 2 * -1; 
     
     for (int i = 0; i < leds_gun->numPixels(); i++) {
         leds_gun->setPixelColor(i, intSin(m + i * 90), 0, 0);
@@ -31,24 +31,24 @@ void animations::_anim_connecting() {
 }
 
 void animations::_anim_idle() {
-    unsigned long m = millis() / 10; 
+    unsigned long m = runTime / 10; 
     
     for (int i = 0; i < leds_gun->numPixels(); i++) {
         float sinVal = floatSin(m);
         leds_gun->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
     for (int i = 0; i < leds_sensors->numPixels(); i++) {
         float sinVal = floatSin(m);
         leds_sensors->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
 
@@ -57,14 +57,14 @@ void animations::_anim_idle() {
 }
 
 void animations::_anim_playing() {
-    unsigned long m = millis() / 10; 
+    unsigned long m = runTime / 10; 
     
     // calculate amount of health to display
-    int pixels = pState->health * leds_gun->numPixels() / pState->max_health;
+    int pixels = pistol_state->health * leds_gun->numPixels() / pistol_state->max_health;
     for (int i = 0; i < leds_gun->numPixels(); i++) {
         float sinVal = floatSin(m + i * 5) / 2 + 0.5;
         if (i < pixels) {
-            leds_gun->setPixelColor(i, sinVal * pState->color.r, sinVal * pState->color.g, sinVal * pState->color.b);
+            leds_gun->setPixelColor(i, sinVal * pistol_state->color.r, sinVal * pistol_state->color.g, sinVal * pistol_state->color.b);
         } else {
             leds_gun->setPixelColor(i, 0, 0, 0);
         }
@@ -73,9 +73,9 @@ void animations::_anim_playing() {
         float sinVal = floatSin(m + i * 180);
         leds_sensors->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
 
@@ -84,15 +84,15 @@ void animations::_anim_playing() {
 }
 
 void animations::_anim_dead() {
-    unsigned long m = millis() / 10; 
+    unsigned long m = runTime / 10; 
     
     for (int i = 0; i < leds_gun->numPixels(); i++) {
         float sinVal = floatSin(i * 180 + m) * 0.2;
         leds_gun->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
     leds_sensors->fill(0);
@@ -101,17 +101,16 @@ void animations::_anim_dead() {
     leds_sensors->show();
 }
 
-void animations::_anim_shooting() {
-    unsigned long m = millis() / 10; 
-    unsigned long d = (millis() - startMillis);
+bool animations::_anim_shoot() {
+    unsigned long m = runTime / 2;
     
     for (int i = 0; i < leds_gun->numPixels(); i++) {
-        float sinVal = floatSin(d * -1 + i * 12);
+        float sinVal = floatSin(runTime * -1 + i * 12);
         leds_gun->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
     
@@ -119,87 +118,93 @@ void animations::_anim_shooting() {
         float sinVal = floatSin(m + i * 180);
         leds_sensors->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
 
     leds_gun->show();
     leds_sensors->show();
 
-    if (d >= 180) {
-        nextAnimation();
-    }
+    return runTime >= 180;
 }
 
-void animations::_anim_hit() {
-    unsigned long d = (millis() - startMillis);
+bool animations::_anim_hit() {
     
-    int pixels = pState->health * leds_gun->numPixels() / pState->max_health;
+    int pixels = pistol_state->health * leds_gun->numPixels() / pistol_state->max_health;
     for (int i = 0; i < leds_gun->numPixels(); i++) {
         if (i < pixels) {
-            leds_gun->setPixelColor(i, 0.1 * pState->color.r, 0.1 * pState->color.g, 0.1 * pState->color.b);
+            leds_gun->setPixelColor(i, 0.1 * pistol_state->color.r, 0.1 * pistol_state->color.g, 0.1 * pistol_state->color.b);
         } else {
             leds_gun->setPixelColor(i, 0, 0, 0);
         }
     }
     
     for (int i = 0; i < leds_sensors->numPixels(); i++) {
-        float sinVal = 1 - (float)d / 200;
+        float sinVal = 1 - (float)runTime / 200;
         leds_sensors->setPixelColor(
             i, 
-            sinVal * pState->color.r, 
-            sinVal * pState->color.g,
-            sinVal * pState->color.b
+            sinVal * pistol_state->color.r, 
+            sinVal * pistol_state->color.g,
+            sinVal * pistol_state->color.b
         );
     }
 
     leds_gun->show();
     leds_sensors->show();
 
-    if (d >= 200) {
-        nextAnimation();
-    }
+    return runTime >= 200;
 }
 
 void animations::draw() {
-  switch (state) {
-    case ANIM_CONNECTING:
-        _anim_connecting();
-        break;
-    case ANIM_IDLE:
-        _anim_idle();
-        break;
-    case ANIM_PLAYING:
-        _anim_playing();
-        break;
-    case ANIM_DEAD:
-        _anim_dead();
-        break;
-    case ANIM_SHOOTING:
-        _anim_shooting();
-        break;
-    case ANIM_HIT:
-        _anim_hit();
-        break;
-  }
+    // Overlay animations
+    if (currentOverlay != nullptr) {
+        bool finished = (this->*currentOverlay)();
+        if (finished) currentOverlay = nullptr;
+    }
+
+    // Main animations
+    switch (this->pistol_state->gamestate) {
+        case GAMESTATE_OFFLINE:
+            currentAnimation = &animations::_anim_connecting;
+            break;
+        case GAMESTATE_IDLE:
+            currentAnimation = &animations::_anim_idle;
+            break;
+        case GAMESTATE_PLAYING:
+            if (pistol_state->health > 0) {
+                currentAnimation = &animations::_anim_playing;
+            } else {
+                currentAnimation = &animations::_anim_dead;
+            }
+            break;
+    }
+
+    if (lastAnimation != currentAnimation) {
+        startTime = millis();
+        lastAnimation = currentAnimation;
+    }
+    runTime = millis() - startTime;
+
+    if (currentAnimation != nullptr && currentOverlay == nullptr) {
+        (this->*currentAnimation)();
+    }
 }
 
-void animations::setAnimation(AnimationState state, AnimationState nextState) {
-    this->state = state;
-    this->nextState = nextState;
-    startMillis = millis();
-}
-
-void animations::setAnimation(AnimationState state) {
-    startMillis = millis();
-    if (this->state == state) return;
-    this->nextState = this->state;
-    this->state = state;
-}
-
-void animations::nextAnimation() {
-    this->state = nextState;
-    startMillis = millis();
+void animations::play(AnimationState state) {
+    switch (state) {
+        case ANIM_SHOOT:
+            currentOverlay = &animations::_anim_shoot;
+            break;
+        case ANIM_HIT:
+            currentOverlay = &animations::_anim_hit;
+            break;
+        default:
+            currentOverlay = nullptr;
+            break;
+    }
+    startTime = millis();
+    runTime = 0;
+    draw();
 }

@@ -5,32 +5,34 @@
 #include <Adafruit_NeoPixel.h>
 #include "pistol.h"
 
-enum AnimationState {ANIM_CONNECTING, ANIM_IDLE, ANIM_PLAYING, ANIM_DEAD, ANIM_SHOOTING, ANIM_HIT};
+enum AnimationState {ANIM_NONE, ANIM_SHOOT, ANIM_HIT};
 
 class animations
 {
   private:
-    AnimationState state = ANIM_CONNECTING;
-    AnimationState nextState = ANIM_IDLE;
-    pistol_state_t *pState;
+    AnimationState state = ANIM_NONE;
+    pistol_state_t *pistol_state;
     bool repeat = false;
     Adafruit_NeoPixel *leds_gun;
     Adafruit_NeoPixel *leds_sensors;
+    
+    uint64_t runTime = 0;
+    uint64_t startTime = 0;
     // Animation functions
     void _anim_connecting();
     void _anim_idle();
     void _anim_playing();
     void _anim_dead();
-    void _anim_shooting();
-    void _anim_hit();
-    unsigned long startMillis = 0;
+    void (animations::*currentAnimation)();
+    void (animations::*lastAnimation)();
+    bool _anim_shoot();
+    bool _anim_hit();
+    bool (animations::*currentOverlay)();
   public:
     animations(Adafruit_NeoPixel *leds_gun, Adafruit_NeoPixel *leds_sensors, pistol_state_t *state);
     ~animations() = default;
     void draw();
-    void setAnimation(AnimationState state, AnimationState nextState);
-    void setAnimation(AnimationState state);
-    void nextAnimation();
+    void play(AnimationState state);
 };
 
 #endif
