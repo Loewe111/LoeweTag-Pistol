@@ -81,14 +81,6 @@ void pingMaster() {
 
 void updateState(gamestate_t newState) {
   state.gamestate = newState;
-
-  if (state.gamestate == GAMESTATE_OFFLINE) {
-    anim.setAnimation(ANIM_CONNECTING);
-  } else if (state.gamestate == GAMESTATE_IDLE) {
-    anim.setAnimation(ANIM_IDLE);
-  } else if (state.gamestate == GAMESTATE_PLAYING) {
-    anim.setAnimation(ANIM_PLAYING);
-  }
 }
 
 void handleMessages(uint8_t *mac, uint8_t *data, uint8_t len) {
@@ -182,7 +174,7 @@ void shoot() {
   digitalWrite(PIN_GUN_IR_BEAM_NARROW, LOW);
 }
 
-void flashMotor() {
+void flashMotor() { // TODO: Remove this function
   digitalWrite(PIN_GUN_MOTOR, HIGH);
   delay(30);
   digitalWrite(PIN_GUN_MOTOR, LOW);
@@ -235,14 +227,14 @@ void setup() {
 
 void loop() {
   if(digitalRead(PIN_GUN_TRIGGER) && millis() - lastShoot > state.weapon.reload_time && state.weapon.active) {
-    anim.setAnimation(ANIM_SHOOTING);
+    anim.play(ANIM_SHOOT);
     shoot();
     lastShoot = millis();
   }
 
   if(IrReceiver.decode()) {
     if(IrReceiver.decodedIRData.protocol != UNKNOWN) {
-      anim.setAnimation(ANIM_HIT);
+      anim.play(ANIM_HIT);
       message_hit_t hit = {(uint16_t)IrReceiver.decodedIRData.decodedRawData};
       message_base_t* message = create_message(deviceID, masterID, MESSAGE_HIT, &hit);
       sendMessage(message);
