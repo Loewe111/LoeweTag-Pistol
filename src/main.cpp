@@ -165,11 +165,11 @@ void flashMotor() {
   digitalWrite(PIN_GUN_MOTOR, LOW);
 }
 
-unsigned int generateDeviceID() { // Generate a unique Device ID based on the MAC address
+uint16_t generateDeviceID() { // Generate a unique Device ID based on the MAC address
   uint8_t mac[6];
   WiFi.macAddress(mac);
-  unsigned long macID = ((unsigned long)mac[0] << 40) | ((unsigned long)mac[1] << 32) | ((unsigned long)mac[2] << 24) |
-                        ((unsigned long)mac[3] << 16) | ((unsigned long)mac[4] << 8) | ((unsigned long)mac[5]);
+  uint64_t macID = ((uint64_t)mac[0] << 40) | ((uint64_t)mac[1] << 32) | ((uint64_t)mac[2] << 24) |
+                   ((uint64_t)mac[3] << 16) | ((uint64_t)mac[4] << 8) | ((uint64_t)mac[5]);
   randomSeed(macID); // Seed the random number generator with the mac address
   uint16_t randomID = random(0, 0xFFFF);
   return randomID;
