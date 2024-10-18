@@ -153,10 +153,33 @@ void sendInfo() {
   sendMessage(message);
 }
 
+uint8_t getSendPin() {
+  if (state.weapon.beam_type == pistol_weapon_t::narrow) {
+    return PIN_GUN_IR_BEAM_NARROW;
+  } else if (state.weapon.beam_type == pistol_weapon_t::wide) {
+    return PIN_GUN_IR_BEAM_WIDE;
+  }
+  return -1;
+}
+
 void shoot() {
+  uint8_t sendPin = getSendPin();
+  IrSender.setSendPin(sendPin);
+
+  // Activate the narrow beam if the weapon is not set to narrow
+  if (state.weapon.beam_type != pistol_weapon_t::narrow) {
+    digitalWrite(PIN_GUN_IR_BEAM_NARROW, HIGH);
+  }
+
+  // Activate the motor
   digitalWrite(PIN_GUN_MOTOR, HIGH);
+
+  // Send the IR signal
   IrSender.sendOnkyo(deviceID, 0, 0);
+
+  // Deactivate the motor and narrow beam
   digitalWrite(PIN_GUN_MOTOR, LOW);
+  digitalWrite(PIN_GUN_IR_BEAM_NARROW, LOW);
 }
 
 void flashMotor() {
