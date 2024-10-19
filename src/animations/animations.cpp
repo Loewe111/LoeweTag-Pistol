@@ -157,6 +157,23 @@ bool animations::_anim_hit() {
     return runTime >= 200;
 }
 
+bool animations::_anim_locate() {
+    unsigned long m = runTime;
+    for (int i = 0; i < leds_gun->numPixels(); i++) {
+        uint32_t color = leds_gun->ColorHSV(50 * m + i * (0x4000 / leds_gun->numPixels()));
+        leds_gun->setPixelColor(i, color);
+    }
+    for (int i = 0; i < leds_sensors->numPixels(); i++) {
+        uint32_t color = leds_sensors->ColorHSV(50 * m + i * (0x4000 / leds_sensors->numPixels()));
+        leds_sensors->setPixelColor(i, color);
+    }
+
+    leds_gun->show();
+    leds_sensors->show();
+
+    return runTime >= 3600;
+}
+
 void animations::draw() {
     // Overlay animations
     if (currentOverlay != nullptr) {
@@ -199,6 +216,9 @@ void animations::play(AnimationState state) {
             break;
         case ANIM_HIT:
             currentOverlay = &animations::_anim_hit;
+            break;
+        case ANIM_LOCATE:
+            currentOverlay = &animations::_anim_locate;
             break;
         default:
             currentOverlay = nullptr;

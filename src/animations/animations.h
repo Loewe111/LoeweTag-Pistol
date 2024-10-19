@@ -5,7 +5,7 @@
 #include <Adafruit_NeoPixel.h>
 #include "pistol.h"
 
-enum AnimationState {ANIM_NONE, ANIM_SHOOT, ANIM_HIT};
+enum AnimationState {ANIM_NONE, ANIM_SHOOT, ANIM_HIT, ANIM_LOCATE};
 
 class animations
 {
@@ -27,6 +27,7 @@ class animations
     void (animations::*lastAnimation)();
     bool _anim_shoot();
     bool _anim_hit();
+    bool _anim_locate();
     bool (animations::*currentOverlay)();
   public:
     animations(Adafruit_NeoPixel *leds_gun, Adafruit_NeoPixel *leds_sensors, pistol_state_t *state);

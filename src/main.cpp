@@ -112,6 +112,9 @@ void handleMessages(uint8_t *mac, uint8_t *data, uint8_t len) {
       memcpy(&set_gamestate, message->data, sizeof(message_set_gamestate_t));
       updateState(set_gamestate.gamestate);
     } break;
+    case MESSAGE_LOCATE: {
+      anim.play(ANIM_LOCATE);
+    } break;
     case MESSAGE_SET_COLOR: {
       message_set_color_t set_color;
       memcpy(&set_color, message->data, sizeof(message_set_color_t));
